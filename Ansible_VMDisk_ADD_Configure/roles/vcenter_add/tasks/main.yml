@@ -1,0 +1,40 @@
+---
+- block:
+  - include_vars: VCenters.yml
+    no_log: true
+
+  - set_fact:
+      vcenter_location: "{{ (location) | replace(' ','') }}"
+
+  - name: Get the VCenter detials based on Location
+    set_fact:
+      vCenterServer: "{{ vcenter_item.value }}"
+    when:
+      - vcenter_location|default(None)|length !=0
+      - vcenter_item.key  ==  vcenter_location
+    with_items: "{{ vcenters|dict2items }}"
+    loop_control:
+      loop_var: vcenter_item
+    no_log: true
+
+  - name: Set the Server Name for Disk Creation on VCenter
+    set_fact:
+      ServerName: "{{ item.1 }}"
+    loop:  "{{ ServerInfo|dict2items|subelements('value') }}"
+
+  - debug:
+      msg: "Using vCenter: {{ vCenterServer|lower }}"
+
+  - name: Run VM level script
+    script: ./scripts/addVM.ps1 "{{ vm_svc_pass }}" "{{ ServerName }}" "{{ vCenterServer }}" "{{ vm_task_item.DriveSize }}"
+    no_log: true
+    retries: 3
+    delay: 10
+    until: addVM_results.rc == 0
+    register: addVM_results
+
+  rescue:
+  - set_fact:
+      error_code: "['VM Disk Addition Failed']"
+
+  - fail:

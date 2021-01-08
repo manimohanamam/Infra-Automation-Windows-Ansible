@@ -1,0 +1,68 @@
+---
+- name: Add Server to Dynamic Inventory
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - import_tasks: Dynamic_Inventory.yml
+
+  - name: Add JUMP Server to Inventory
+    add_host:
+      name: VCenter_jumpserver.fqdn.net
+      group: domain_name
+
+#Jump server needed to connect to Vcenter via PowerCLI
+#Jump server info to be passed via user input extra vars
+- name: Add VM disk through vCenter via PowerCLI on Windows jump server
+  hosts: VCenter_jumpserver.fqdn.net
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+  - name: Select Vcenter - Run VM Disk Add via Jump Server
+    block:
+      - include_role:
+           name: vcenter_add
+        when: vm_task_item.DiskType|default(None) == 'addl'
+        with_items: "{{ DiskInfo }}"
+        loop_control:
+          loop_var: vm_task_item
+          label: "VM Disk {{ idx_var + 1 }}"
+          index_var: idx_var
+    rescue:
+      - name: DISPLAY-ERRORCODE
+        debug:
+          msg: "{{ error_code }}"
+      - fail:
+    when: DiskInfo|length != 0
+
+- name: Configure the Disks Added on Windows OS
+  hosts: all:!VCenter_jumpserver.fqdn.net
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+  - name: Configure Disk on Target Server
+    block:
+      - debug:
+          msg: "Configure Disk on : {{ inventory_hostname|lower }}"
+
+      - include_role:
+          name: win_disk_config
+        when: win_task_item.DiskType|default(None) == 'addl'
+        with_items: "{{ DiskInfo }}"
+        loop_control:
+          loop_var: win_task_item
+          label: "Windows Disk {{ idx_var + 1 }}"
+          index_var: idx_var
+
+      - name: Gather the Disk Details after Configuration
+        win_shell: Get-Disk | Get-Partition | Get-Volume | ? {$_.DriveLetter -notlike ""} | select DriveLetter,FileSystemLabel,HealthStatus,@{Name='Size';Expression={[int]($_.Size/1GB)}}
+        register: DiskDetails
+
+      - name: List of Drives after the Configuration
+        debug:
+          msg: "{{ DiskDetails.stdout_lines }}"
+    rescue:
+      - name: DISPLAY-ERRORCODE
+        debug:
+          msg: "{{ error_code }}"
+      - fail:
+    when: DiskInfo|length != 0

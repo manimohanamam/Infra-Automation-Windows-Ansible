@@ -1,0 +1,14 @@
+---
+- block:
+  - name: Run Disk Config script
+    script: ./scripts/disk_config.ps1 "{{ win_task_item.DriveLetter }}" "{{ win_task_item.DriveLabel | default('Data') }}" "{{ win_task_item.DriveSize }}"
+    retries: 3
+    delay: 10
+    until: disk_config_results.rc == 0
+    register: disk_config_results
+
+  rescue:
+  - set_fact:
+      error_code: " Windows Disk Config Failed "
+
+  - fail:

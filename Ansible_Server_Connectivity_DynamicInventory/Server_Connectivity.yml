@@ -1,0 +1,12 @@
+---
+- name: Add Server to Dynamic Inventory
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - import_tasks: Dynamic_Inventory.yml
+
+- name: Run Ping Test
+  hosts: all
+  gather_facts: false
+  tasks:
+  - win_ping:

@@ -1,0 +1,20 @@
+---
+- block:
+  - name: Add Servers to Group for Dynamic Inventory
+    add_host:
+       name: "{{ item.1 | lower }}"
+       group: "{{ item.0.key }}"
+    loop:  "{{ ServerInfo|dict2items|subelements('value') }}"
+
+  - set_fact:
+      error_code: " ERR01: Server Info Input is Incorrect "
+    when: ServerInfo|length == 0
+
+  - fail:
+    when: ServerInfo|length == 0
+
+  rescue:
+    - name: DISPLAY-ERRORCODE
+      debug:
+        msg: "{{ error_code }}"
+    - fail:
