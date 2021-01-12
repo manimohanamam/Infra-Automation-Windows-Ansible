@@ -44,7 +44,7 @@ Launching Job Template using Tower REST API
 ------------------------------------------
 * Use the following REST API call to launch the Ansible Tower Job Template from anywhere. This will connect the Ansible Tower from any where as far as the tower username/password has been provided in the following curl command.
 ```
-curl -X POST --user <TOWER_USERNAME>:<TOWER_PASSWORED> -d '{"extra_vars": "{\"ServerData\": {\"windomainapac\": [\"VRATESTXXXXXX.apac.bg.corpintra.net\"] } }"}' -H "Content-Type: application/json" https://<TOWER FQDN>>/api/v1/job_templates/<JOB_TEMPLATE_ID>/launch/ -k
+curl -X POST --user <TOWER_USERNAME>:<TOWER_PASSWORED> -d '{"extra_vars": "{\"ServerInfo\": {\"domain_name\": [\"targetserver.fqdn.net\"] } }"}' -H "Content-Type: application/json" https://<TOWER FQDN>>/api/v1/job_templates/<JOB_TEMPLATE_ID>/launch/ -k
 ```
 * Sample values for the feild that are used in above curl command
     * TOWER_USERNAME: admin
